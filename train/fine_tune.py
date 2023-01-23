@@ -1,5 +1,7 @@
 from datasets import load_dataset
 from dataset import ImageCaptioningDataset
+import logging
+logging.basicConfig(format='%(asctime)s  %(levelname)-10s %(message)s', datefmt="%Y-%m-%d-%H-%M-%S", level=logging.INFO)
 
 from argparsing import parse_args
 from transformers import GitProcessor, GitForCausalLM
@@ -9,6 +11,7 @@ from huggingface_hub import HfApi
 import torch
 from torch.utils.data import DataLoader
 from pl_module import ImageCaptioningModule
+import os
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
@@ -37,9 +40,10 @@ def training_loop(args):
   
   train_dataset = ImageCaptioningDataset(dt_train, processor)
   val_dataset = ImageCaptioningDataset(dt_val, processor)
-    
-  train_loader = DataLoader(train_dataset, batch_size=args.batch, shuffle=True)
-  val_loader = DataLoader(val_dataset, batch_size=args.batch, shuffle=False)
+  
+  num_workers = os.cpu_count() if os.name != "nt" else 0
+  train_loader = DataLoader(train_dataset, batch_size=args.batch, shuffle=True, num_workers=num_workers)
+  val_loader = DataLoader(val_dataset, batch_size=args.batch, shuffle=False, num_workers=num_workers)
   
   model = GitForCausalLM.from_pretrained(input_model_repo)
   callbacks = []
@@ -47,7 +51,7 @@ def training_loop(args):
   pl_train_module = ImageCaptioningModule(processor, model, train_loader, val_loader, learning_rate=1e-2)
   
   ### Trainer
-  logger = TensorBoardLogger("tb-logs", name="image-captioning")
+  logger = TensorBoardLogger("tb_logs", name="image-captioning")
   
   checkpoint = ModelCheckpoint(dirpath=args.model_dir, 
                                save_top_k=2, monitor="val_loss", 
@@ -62,20 +66,27 @@ def training_loop(args):
                        callbacks=callbacks,
                        max_epochs=args.epochs,
                        check_val_every_n_epoch=1,
+                       # val_check_interval=50,
                        precision=16,
                        num_sanity_val_steps=1,
                        )
 
   # find our own learning rate
+  logging.info("Tuning learning rate...")
+  
   trainer.tune(pl_train_module)
   
   # and fit
+  logging.info("Training...")
+  
   trainer.fit(pl_train_module)
   
   # save best model
-  pl_model_best = ImageCaptioningModule.load_from_checkpoint(checkpoint.best_model_path)
-  pl_model_best.save_pretrained("tb-logs/image-captioning/best_model", push_to_hub=True, repo_id=args.model)
-  
+  logging.info("Saving best model...")
+  pl_model_best = ImageCaptioningModule.load_from_checkpoint(checkpoint.best_model_path, processor=processor, model=model, train_dataloader=train_loader, val_dataloader=val_loader)
+  pl_model_best.model.save_pretrained("tb_logs/image-captioning/best_model", push_to_hub=True, repo_id=args.model)
+  pl_model_best.processor.save_pretrained("tb_logs/image-captioning/best_model", push_to_hub=True, repo_id=args.model)
+
 if __name__ == "__main__":
   args = parse_args()
 

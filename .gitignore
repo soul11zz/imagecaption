@@ -135,3 +135,4 @@ dmypy.json
 tmp/
 tb_logs/
 lightning_logs/
+.lr_find_*

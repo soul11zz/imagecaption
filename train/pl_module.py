@@ -4,13 +4,14 @@ import pytorch_lightning as pl
 
 
 class ImageCaptioningModule(pl.LightningModule):
-    def __init__(self, processor, model, train_dataloader, val_dataloader, learning_rate=None):
+    def __init__(self, processor, model, train_dataloader, val_dataloader, learning_rate=1e-2, batch_size=2):
         super().__init__()
         self.model = model
         self.processor = processor
         self.train_loader = train_dataloader
         self.val_loader = val_dataloader
         self.lr = learning_rate
+        self.batch_size = batch_size
 
     def training_step(self, batch, batch_idx):
       input_ids = batch["input_ids"]
