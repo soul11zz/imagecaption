@@ -133,4 +133,5 @@ dmypy.json
 .vs/
 .settings/
 tmp/
-tb-logs/
+tb_logs/
+lightning_logs/

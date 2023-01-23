@@ -3,7 +3,6 @@ from dataset import ImageCaptioningDataset
 
 from argparsing import parse_args
 from transformers import GitProcessor, GitForCausalLM
-from hf_hub_lightning import HuggingFaceHubCallback
 
 from huggingface_hub import HfApi
 
@@ -13,15 +12,20 @@ from pl_module import ImageCaptioningModule
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
-
+from pytorch_lightning.callbacks import ModelCheckpoint
+  
 def get_input_model_name(args):
   api = HfApi()
   repo_name = "soul11zz/image-caption-desc-only"
   try:
     api.create_repo(repo_name, private=True, exist_ok=False)
     return "microsoft/git-base"
-  except Exception as e:
-    return args.model
+  except:
+    try:
+      GitProcessor.from_pretrained(repo_name)
+      return args.model
+    except:
+      return "microsoft/git-base"
 
 def training_loop(args):
   
@@ -40,16 +44,20 @@ def training_loop(args):
   model = GitForCausalLM.from_pretrained(input_model_repo)
   callbacks = []
   
-  MAX_LR = 1e-2
-  pl_train_module = ImageCaptioningModule(processor, model, train_loader, 
-                                          val_loader, learning_rate=MAX_LR)
+  pl_train_module = ImageCaptioningModule(processor, model, train_loader, val_loader, learning_rate=1e-2)
   
+  ### Trainer
   logger = TensorBoardLogger("tb-logs", name="image-captioning")
   
-  if args.model:
-    callbacks.append(HuggingFaceHubCallback(args.model))
+  checkpoint = ModelCheckpoint(dirpath=args.model_dir, 
+                               save_top_k=2, monitor="val_loss", 
+                               mode="min", 
+                               filename="imcap-{epoch:02d}-{val_loss:.2f}")
   
-  trainer = pl.Trainer(logger=logger, 
+  callbacks += [checkpoint]
+  
+  trainer = pl.Trainer( auto_lr_find=True,
+                        logger=logger, 
                        gpus=1,
                        callbacks=callbacks,
                        max_epochs=args.epochs,
@@ -59,11 +67,15 @@ def training_loop(args):
                        )
 
   # find our own learning rate
-  lr_finder = trainer.tuner.lr_find(pl_train_module, min_lr=1e-7, max_lr=MAX_LR)
-  pl_train_module.lr = lr_finder.suggestion()
+  trainer.tune(pl_train_module)
   
+  # and fit
   trainer.fit(pl_train_module)
-   
+  
+  # save best model
+  pl_model_best = ImageCaptioningModule.load_from_checkpoint(checkpoint.best_model_path)
+  pl_model_best.save_pretrained("tb-logs/image-captioning/best_model", push_to_hub=True, repo_id=args.model)
+  
 if __name__ == "__main__":
   args = parse_args()
 
