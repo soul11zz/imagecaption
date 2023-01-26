@@ -32,6 +32,8 @@ def get_input_model_name(args):
 
 def training_loop(args):
   
+  pl.seed_everything(42, workers=True)
+  
   dt_train = load_dataset(args.train, split="train")
   dt_val = load_dataset(args.val, split="validation")
 
