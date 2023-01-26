@@ -17,16 +17,16 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
   
-def get_input_model_name(args):
+def get_input_model_name(model_name_with_repo):
   api = HfApi()
-  repo_name = "soul11zz/image-caption-desc-only"
+  repo_name = model_name_with_repo
   try:
     api.create_repo(repo_name, private=True, exist_ok=False)
     return "microsoft/git-base"
   except:
     try:
       GitProcessor.from_pretrained(repo_name)
-      return args.model
+      return model_name_with_repo
     except:
       return "microsoft/git-base"
 
@@ -37,7 +37,7 @@ def training_loop(args):
   dt_train = load_dataset(args.train, split="train")
   dt_val = load_dataset(args.val, split="validation")
 
-  input_model_repo = get_input_model_name(args)
+  input_model_repo = get_input_model_name(args.model)
   processor = GitProcessor.from_pretrained(input_model_repo)
   
   train_dataset = ImageCaptioningDataset(dt_train, processor)
