@@ -37,6 +37,15 @@ class ImageCaptioningModule(pl.LightningModule):
       outputs = self.model(input_ids=input_ids,
                       pixel_values=pixel_values,
                       labels=input_ids)
+
+      pred_outputs = self.model.generate(pixel_values = pixel_values[0].unsqueeze(0),
+                                max_length=50,
+                                early_stopping=True,
+                            )
+
+      preds = self.processor.decode(pred_outputs[0], skip_special_tokens=True)
+      if len(preds) == 0:
+        logging.warning("Empty prediction")
     
       loss = outputs.loss
       try:
