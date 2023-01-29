@@ -52,4 +52,7 @@ def parse_args():
   # Model output
   parser.add_argument("--model", "-m", help="Output model name", default=None)
   
+  # Metrics (bleu or meteor)
+  parser.add_argument("--metric", help="Metric to use for best model (bleu or meteor)", default="bleu")
+  
   return parser.parse_args()

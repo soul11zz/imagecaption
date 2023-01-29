@@ -7,7 +7,8 @@ logging.basicConfig(format='%(asctime)s  %(levelname)-10s %(message)s', datefmt=
 
 
 class ImageCaptioningModule(pl.LightningModule):
-    def __init__(self, processor, model, train_dataloader, val_dataloader, test_dataloader = None, learning_rate=1e-2, batch_size=2):
+    def __init__(self, processor, model, train_dataloader, val_dataloader, 
+                 test_dataloader = None, learning_rate=1e-2, batch_size=2, metric="meteor"):
         super().__init__()
         self.model = model
         self.processor = processor
@@ -16,7 +17,14 @@ class ImageCaptioningModule(pl.LightningModule):
         self.test_loader = test_dataloader
         self.lr = learning_rate
         self.batch_size = batch_size
-
+        
+        # Resolve the metric
+        metric_score = f"{metric}_score"
+        assert hasattr(ImageCaptionMetrics, metric_score), f"Metric {metric} not found in ImageCaptionMetrics"
+        
+        self.metric = getattr(ImageCaptionMetrics, metric_score)
+        self.metric_name = metric
+        
     def training_step(self, batch, batch_idx):
       input_ids = batch["input_ids"]
       pixel_values = batch["pixel_values"]
@@ -66,16 +74,12 @@ class ImageCaptioningModule(pl.LightningModule):
                             )
 
       preds = self.processor.decode(outputs[0], skip_special_tokens=True)
-      if len(preds) == 0:
-        logging.info("Empty prediction")
-        
-        preds = "empty"
-      return ImageCaptionMetrics.meteor_score(preds, [labels])
+      return self.metric(preds, [labels])
     
     def test_epoch_end(self, test_scores):
-      scores = [m["meteor"] for m in test_scores]
-      logging.info(f"Average METEOR: {sum(scores) / len(scores)}")
-      self.log_dict({"meteor": sum(scores) / len(scores)})
+      score = sum(test_scores) / len(test_scores)
+      logging.info(f"Average {self.metric_name.upper()}: {score}")
+      self.log_dict({self.metric_name: score})
       
     def configure_optimizers(self):
         # TODO add scheduler
