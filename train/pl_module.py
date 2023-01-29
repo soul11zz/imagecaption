@@ -57,6 +57,10 @@ class ImageCaptioningModule(pl.LightningModule):
                             )
 
       preds = self.processor.decode(outputs[0], skip_special_tokens=True)
+      if len(preds) == 0:
+        logging.info("Empty prediction")
+        
+        preds = "empty"
       return ImageCaptionMetrics.meteor_score(preds, [labels])
     
     def test_epoch_end(self, test_scores):

@@ -19,5 +19,5 @@ class ImageCaptionMetrics:
       
     # HuggingFace implementation of METEOR metric expects a list of reference words
     # and a list of predictions words.
-    target_list = [t.split() for t in targets]
-    return cls.meteor.compute(predictions=[preds.split()], references=target_list)
+    
+    return cls.meteor.compute(predictions=[preds], references=targets)
