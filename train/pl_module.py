@@ -1,15 +1,15 @@
 import torch
-
 import pytorch_lightning as pl
-
+from metrics import ImageCaptionMetrics
 
 class ImageCaptioningModule(pl.LightningModule):
-    def __init__(self, processor, model, train_dataloader, val_dataloader, learning_rate=1e-2, batch_size=2):
+    def __init__(self, processor, model, train_dataloader, val_dataloader, test_dataloader = None, learning_rate=1e-2, batch_size=2):
         super().__init__()
         self.model = model
         self.processor = processor
         self.train_loader = train_dataloader
         self.val_loader = val_dataloader
+        self.test_dataloader = test_dataloader
         self.lr = learning_rate
         self.batch_size = batch_size
 
@@ -43,6 +43,20 @@ class ImageCaptioningModule(pl.LightningModule):
       self.log_dict({"val_loss": loss, "perplexity": perplexity}, sync_dist=True)
       return loss
 
+    def test_step(self, batch, batch_idx):
+      input_ids = batch["input_ids"]
+      pixel_values = batch["pixel_values"]
+      
+      outputs = self.model(input_ids=input_ids,
+                      pixel_values=pixel_values,
+                      labels=input_ids)
+
+      preds = self.processor.decode(outputs[0], skip_special_tokens=True)
+      return ImageCaptioningModule.meteor(preds, [self.test_dataloader.dataset[batch_idx]["text"]])
+    
+    def test_epoch_end(self, test_scores):
+      self.log("mean meteor score", torch.mean(torch.stack(test_scores)))
+      
     def configure_optimizers(self):
         # TODO add scheduler
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -54,4 +68,7 @@ class ImageCaptioningModule(pl.LightningModule):
 
     def val_dataloader(self):
         return self.val_loader
+      
+    def test_dataloader(self):
+        return self.test_dataloader
       

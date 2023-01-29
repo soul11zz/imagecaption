@@ -39,6 +39,12 @@ def parse_args():
   parser.add_argument("--warmup_steps", type=int, required=False, default=default_warmup, help="Steps before training begins")
   parser.add_argument("--verbose", action="store_true", required=False, default=default_verbose, help="Validation verbosity (print pred/answer)")
 
+  # Auto tuning
+  parser.add_argument("--tune-lr", action="store_true", required=False, default=False, help="Tune learning rate with PL")
+  
+  # Saving best model to hub
+  parser.add_argument("--save-best", action="store_true", required=False, default=False, help="Save best model to hub")
+  
   # Results dir
   parser.add_argument("--model_dir", help="Result dir", default=os.getenv("SM_MODEL_DIR", "./tmp"))
   
