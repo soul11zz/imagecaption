@@ -9,3 +9,4 @@ nvgpu
 lightning-bolts
 tensorboard
 tensorboardX
+evaluate
