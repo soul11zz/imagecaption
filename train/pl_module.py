@@ -9,7 +9,7 @@ class ImageCaptioningModule(pl.LightningModule):
         self.processor = processor
         self.train_loader = train_dataloader
         self.val_loader = val_dataloader
-        self.test_dataloader = test_dataloader
+        self.test_loader = test_dataloader
         self.lr = learning_rate
         self.batch_size = batch_size
 
@@ -44,18 +44,20 @@ class ImageCaptioningModule(pl.LightningModule):
       return loss
 
     def test_step(self, batch, batch_idx):
-      input_ids = batch["input_ids"]
+      labels = self.processor.decode(batch["input_ids"][0], skip_special_tokens=True)
       pixel_values = batch["pixel_values"]
       
-      outputs = self.model(input_ids=input_ids,
-                      pixel_values=pixel_values,
-                      labels=input_ids)
+      outputs = self.model.generate(pixel_values = pixel_values,
+                                max_length=50,
+                                early_stopping=True,
+                            )
 
       preds = self.processor.decode(outputs[0], skip_special_tokens=True)
-      return ImageCaptioningModule.meteor(preds, [self.test_dataloader.dataset[batch_idx]["text"]])
+      return ImageCaptionMetrics.meteor_score(preds, [labels])
     
     def test_epoch_end(self, test_scores):
-      self.log("mean meteor score", torch.mean(torch.stack(test_scores)))
+      mean_score = torch.mean(torch.stack(test_scores))
+      self.log("mean meteor score", mean_score)
       
     def configure_optimizers(self):
         # TODO add scheduler
@@ -70,5 +72,5 @@ class ImageCaptioningModule(pl.LightningModule):
         return self.val_loader
       
     def test_dataloader(self):
-        return self.test_dataloader
+        return self.test_loader
       

@@ -34,9 +34,9 @@ def training_loop(args):
   
   pl.seed_everything(42, workers=True)
   
-  dt_train = load_dataset(args.train, split="train")
-  dt_val = load_dataset(args.val, split="validation")
-  dt_test = load_dataset(args.test, split="test")
+  dt_train = load_dataset(args.dataset, split="train")
+  dt_val = load_dataset(args.dataset, split="validation")
+  dt_test = load_dataset(args.dataset, split="test")
   
   input_model_repo = get_input_model_name(args.model)
   processor = GitProcessor.from_pretrained(input_model_repo)
@@ -46,6 +46,7 @@ def training_loop(args):
   test_dataset = ImageCaptioningDataset(dt_test, processor)
   
   num_workers = os.cpu_count() if os.name != "nt" else 0
+  
   train_loader = DataLoader(train_dataset, batch_size=args.batch, shuffle=True, num_workers=num_workers)
   val_loader = DataLoader(val_dataset, batch_size=args.batch, shuffle=False, num_workers=num_workers)
   test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=num_workers)
@@ -90,20 +91,25 @@ def training_loop(args):
   
   trainer.fit(pl_train_module)
   
+  pl_model_best = None
+  if args.save_best or args.test_best:
+    pl_model_best = ImageCaptioningModule.load_from_checkpoint(checkpoint.best_model_path, processor=processor, model=model, 
+                                                             train_dataloader=train_loader, val_dataloader=val_loader, test_dataloader=test_loader)
   # save best model
   if args.save_best:
     logging.info("Saving best model...")
-    save_best_model(args.model, processor, train_loader, val_loader, model, checkpoint)
+    save_best_model(pl_model_best, args.model)
 
-def save_best_model(model_repo, processor, train_loader, val_loader, test_dataloader, model, checkpoint):
-    pl_model_best = ImageCaptioningModule.load_from_checkpoint(checkpoint.best_model_path, processor=processor, model=model, train_dataloader=train_loader, val_dataloader=val_loader, test_dataloader=test_dataloader)
-    pl_model_best.model.save_pretrained("tb_logs/image-captioning/best_model", push_to_hub=True, repo_id=model_repo)
-    pl_model_best.processor.save_pretrained("tb_logs/image-captioning/best_model", push_to_hub=True, repo_id=model_repo)
-    return pl_model_best
-
-def test_best_model(trainer, pl_model_best):
-  
+  if args.test_best:
+    logging.info("Testing best model...")
     trainer.test(pl_model_best)
+        
+def save_best_model(model_repo, pl_best_model):
+    
+    pl_best_model.model.save_pretrained("tb_logs/image-captioning/best_model", push_to_hub=True, repo_id=model_repo)
+    pl_best_model.processor.save_pretrained("tb_logs/image-captioning/best_model", push_to_hub=True, repo_id=model_repo)
+    return pl_best_model
+
     
 if __name__ == "__main__":
   args = parse_args()

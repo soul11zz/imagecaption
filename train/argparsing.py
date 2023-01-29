@@ -8,10 +8,8 @@ def parse_args():
   default_train = os.getenv("SM_CHANNEL_TRAIN", None)
   default_val = os.getenv("SM_CHANNEL_VAL", None)
   
-  parser.add_argument("--train", "-t", type=str, default=default_train,
+  parser.add_argument("--dataset", "-d", type=str, default=default_train,
                       help="Single path to directory of annotated JSON training data")
-  parser.add_argument("--val", "-v", type=str, default=default_val,
-                      help="Single path to directory of annotated JSON validation data")
   
   # Model Hyper-parameters
   default_batches = int(os.getenv('SM_HP_BATCH', 1))
@@ -44,7 +42,7 @@ def parse_args():
   
   # Saving best model to hub
   parser.add_argument("--save-best", action="store_true", required=False, default=False, help="Save best model to hub")
-  
+  parser.add_argument("--test-best", action="store_true", required=False, default=False, help="Test best model")
   # Results dir
   parser.add_argument("--model_dir", help="Result dir", default=os.getenv("SM_MODEL_DIR", "./tmp"))
   
