@@ -2,6 +2,10 @@ import torch
 import pytorch_lightning as pl
 from metrics import ImageCaptionMetrics
 
+import logging
+logging.basicConfig(format='%(asctime)s  %(levelname)-10s %(message)s', datefmt="%Y-%m-%d-%H-%M-%S", level=logging.INFO)
+
+
 class ImageCaptioningModule(pl.LightningModule):
     def __init__(self, processor, model, train_dataloader, val_dataloader, test_dataloader = None, learning_rate=1e-2, batch_size=2):
         super().__init__()
@@ -56,8 +60,9 @@ class ImageCaptioningModule(pl.LightningModule):
       return ImageCaptionMetrics.meteor_score(preds, [labels])
     
     def test_epoch_end(self, test_scores):
-      mean_score = torch.mean(torch.stack(test_scores))
-      self.log("mean meteor score", mean_score)
+      scores = [m["meteor"] for m in test_scores]
+      logging.info(f"Average METEOR: {sum(scores) / len(scores)}")
+      self.log_dict({"meteor": sum(scores) / len(scores)})
       
     def configure_optimizers(self):
         # TODO add scheduler
