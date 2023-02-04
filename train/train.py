@@ -15,7 +15,9 @@ import os
 
 import pytorch_lightning as pl
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
+
+from pl_data import ImageCaptionDataModule
   
 def get_input_model_name(model_name_with_repo):
   api = HfApi()
@@ -30,31 +32,24 @@ def get_input_model_name(model_name_with_repo):
     except:
       return "microsoft/git-base"
 
+def crate_data_module(dataset_name, processor, batch_size, auth_token):
+  
+  return ImageCaptionDataModule(dataset_name, processor, batch_size=batch_size, auth_token=auth_token)
+  
+  
 def training_loop(args):
   
   pl.seed_everything(42, workers=True)
   
-  dt_train = load_dataset(args.dataset, split="train")
-  dt_val = load_dataset(args.dataset, split="validation")
-  dt_test = load_dataset(args.dataset, split="test")
-  
   input_model_repo = get_input_model_name(args.model)
   processor = GitProcessor.from_pretrained(input_model_repo)
   
-  train_dataset = ImageCaptioningDataset(dt_train, processor)
-  val_dataset = ImageCaptioningDataset(dt_val, processor)
-  test_dataset = ImageCaptioningDataset(dt_test, processor)
-  
-  num_workers = os.cpu_count() if os.name != "nt" else 0
-  
-  train_loader = DataLoader(train_dataset, batch_size=args.batch, shuffle=True, num_workers=num_workers)
-  val_loader = DataLoader(val_dataset, batch_size=args.batch, shuffle=False, num_workers=num_workers)
-  test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=num_workers)
+  data_module = crate_data_module(args.dataset, processor, args.batch_size, os.getenv("HF_AUTH_TOKEN", None))
   
   model = GitForCausalLM.from_pretrained(input_model_repo)
   callbacks = []
   
-  pl_train_module = ImageCaptioningModule(processor, model, train_loader, val_loader, test_loader, learning_rate=1e-2)
+  pl_train_module = ImageCaptioningModule(processor, model, learning_rate=1e-2)
   
   ### Trainer
   logger = TensorBoardLogger("tb_logs", name="image-captioning")
@@ -64,7 +59,10 @@ def training_loop(args):
                                mode="min", 
                                filename="imcap-{epoch:02d}-{val_loss:.2f}")
   
-  callbacks += [checkpoint]
+  early_stopping = EarlyStopping(monitor="val_loss", patience=3, mode="min")
+  
+  lr_monitor = LearningRateMonitor(logging_interval="step")
+  callbacks += [checkpoint, early_stopping, lr_monitor]
   
   trainer = pl.Trainer( 
                         logger=logger, 
@@ -75,7 +73,7 @@ def training_loop(args):
                        check_val_every_n_epoch=1,
                        # val_check_interval=50,
                        precision=16,
-                       num_sanity_val_steps=2,
+                       num_sanity_val_steps=0,
                        )
 
   # find our own learning rate
@@ -84,21 +82,24 @@ def training_loop(args):
   if args.tune_lr:
     logging.info("Tuning learning rate...")
     tuner = pl.Trainer(auto_lr_find=True, devices=1, accelerator="cuda", num_sanity_val_steps=0)
-    tuner.tune(pl_train_module)
+    tuner.tune(pl_train_module, datamodule=data_module)
   
   # and fit
   logging.info("Training...")
   
-  trainer.fit(pl_train_module)
+  trainer.fit(pl_train_module, datamodule=data_module)
   
   pl_model_best = None
   if args.save_best or args.test_best:
-    pl_model_best = ImageCaptioningModule.load_from_checkpoint(checkpoint.best_model_path, processor=processor, model=model, 
-                                                             train_dataloader=train_loader, val_dataloader=val_loader, test_dataloader=test_loader)
+    pl_model_best = ImageCaptioningModule.load_from_checkpoint(checkpoint.best_model_path, processor=processor, model=model,)
   # save best model
   if args.save_best:
     logging.info("Saving best model...")
-    save_best_model(pl_model_best, args.model)
+    if not args.best_model:
+      logging.warning("No best model name provided, skipping upload of the best model to HuggingFace Hub.")
+    else:
+      logging.info(f"Uploading best model to HuggingFace Hub as {args.best_model}")
+      save_best_model(pl_model_best, args.best_model)
 
   if args.test_best:
     logging.info("Testing best model...")

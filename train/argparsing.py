@@ -29,7 +29,7 @@ def parse_args():
   default_verbose = os.getenv("SM_HP_VERBOSE", False)
   default_verbose = True if default_verbose and default_verbose.lower() == "true" else False
   
-  parser.add_argument("--batch", "-b", type=int, required=False, default=default_batches, help="Batch size")
+  parser.add_argument("--batch-size", "-b", type=int, required=False, default=default_batches, help="Batch size")
   parser.add_argument("--epochs", "-e", type=int, required=False, default=default_epochs, help="Number of training epochs")
   parser.add_argument("--val_check_interval", type=float, required=False, default=default_check_interval, help="After how many steps to validate")
   parser.add_argument("--check_val_every_n_epoch", type=int, required=False, default=default_check_epoch, help="After how many epochs to validate")
@@ -46,11 +46,12 @@ def parse_args():
   # Results dir
   parser.add_argument("--model_dir", help="Result dir", default=os.getenv("SM_MODEL_DIR", "./tmp"))
   
+  parser.add_argument("--best-model", help="Best model name for HuggingFace", default=None)
   # Checkpoint
   parser.add_argument("--ckpt", help="Checkpoint for inference", default=None)
   
   # Model output
-  parser.add_argument("--model", "-m", help="Output model name", default=None)
+  parser.add_argument("--model", "-m", help="Input model name", default=None)
   
   # Metrics (bleu or meteor)
   parser.add_argument("--metric", help="Metric to use for best model (bleu or meteor)", default="bleu")

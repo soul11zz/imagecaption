@@ -7,6 +7,7 @@ from argparsing import parse_args
 from transformers import GitProcessor, GitForCausalLM
 
 from huggingface_hub import HfApi
+from pl_data import ImageCaptionDataModule
 
 import torch
 from torch.utils.data import DataLoader
@@ -20,19 +21,12 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 def score_model(model_name, dataset_name):
     model = GitForCausalLM.from_pretrained(model_name)
     processor = GitProcessor.from_pretrained(model_name)
-    
-    dt_test = load_dataset(dataset_name, split="test")
-    test_dataset = ImageCaptioningDataset(dt_test, processor)
-    
-    num_workers = os.cpu_count() if os.name != "nt" else 0
-    
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=num_workers)
-    pl_train_module = ImageCaptioningModule(processor, model, train_dataloader=None, val_dataloader=None, 
-                                            test_dataloader=test_loader, metric=args.metric)
+    pl_data_module = ImageCaptionDataModule(dataset_name, processor, batch_size=1, auth_token=os.getenv("HF_AUTH_TOKEN", None))    
+    pl_train_module = ImageCaptioningModule(processor, model, metric=args.metric)
     
     tester = pl.Trainer(accelerator="cuda", devices=1, num_sanity_val_steps=0)
     
-    tester.test(pl_train_module)
+    tester.test(pl_train_module, pl_data_module)
 
 if __name__ == "__main__":
   args = parse_args()

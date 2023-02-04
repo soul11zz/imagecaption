@@ -7,16 +7,11 @@ logging.basicConfig(format='%(asctime)s  %(levelname)-10s %(message)s', datefmt=
 
 
 class ImageCaptioningModule(pl.LightningModule):
-    def __init__(self, processor, model, train_dataloader, val_dataloader, 
-                 test_dataloader = None, learning_rate=1e-2, batch_size=2, metric="meteor"):
+    def __init__(self, processor, model, learning_rate=1e-2, metric="meteor"):
         super().__init__()
         self.model = model
         self.processor = processor
-        self.train_loader = train_dataloader
-        self.val_loader = val_dataloader
-        self.test_loader = test_dataloader
         self.lr = learning_rate
-        self.batch_size = batch_size
         
         # Resolve the metric
         metric_score = f"{metric}_score"
@@ -84,15 +79,8 @@ class ImageCaptioningModule(pl.LightningModule):
     def configure_optimizers(self):
         # TODO add scheduler
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=2)
+        scheduler = {"scheduler": lr_scheduler, "monitor": "val_loss"}
     
-        return optimizer
-
-    def train_dataloader(self):
-        return self.train_loader
-
-    def val_dataloader(self):
-        return self.val_loader
-      
-    def test_dataloader(self):
-        return self.test_loader
+        return [optimizer], scheduler
       

@@ -4,7 +4,7 @@ import os
 from torch.utils.data import DataLoader
 from datasets import load_dataset
 
-class ImageCaptionDataModule(pl.DataModule):
+class ImageCaptionDataModule(pl.LightningDataModule):
   
   def __init__(self, dataset_path, processor, **kwargs):
     super().__init__()
@@ -15,6 +15,7 @@ class ImageCaptionDataModule(pl.DataModule):
     
     self.save_hyperparameters(kwargs)
     self.batch_size = self.hparams.get("batch_size", 1)
+    self.auth_token = self.hparams.get("auth_token", None)
   
   def prepare_data(self):
     load_dataset(self.dataset_path, split="train")
@@ -24,12 +25,13 @@ class ImageCaptionDataModule(pl.DataModule):
     processor = self.processor
     
     if stage != "test":
-      dt_train = load_dataset(self.dataset_path, split="train")
+      dt_train = load_dataset(self.dataset_path, split="train", use_auth_token=self.auth_token)
       self.train_dataset = ImageCaptioningDataset(dt_train, processor)
-      dt_val = load_dataset(self.dataset_path, split="validation")
-      self.val_dataset = ImageCaptioningDataset(dt_val, processor)                
+      
+      dt_val = load_dataset(self.dataset_path, split="validation", use_auth_token=self.auth_token)
+      self.val_dataset = ImageCaptioningDataset(dt_val, processor)
     else:
-      dt_test = load_dataset(self.dataset_path, split="test")
+      dt_test = load_dataset(self.dataset_path, split="test", use_auth_token=self.auth_token)
       self.test_dataset = ImageCaptioningDataset(dt_test, processor)
       
     self.num_workers = os.cpu_count() if os.name != "nt" else 0
