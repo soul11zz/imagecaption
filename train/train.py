@@ -92,6 +92,7 @@ def training_loop(args):
   pl_model_best = None
   if args.save_best or args.test_best:
     pl_model_best = ImageCaptioningModule.load_from_checkpoint(checkpoint.best_model_path, processor=processor, model=model,)
+  
   # save best model
   if args.save_best:
     logging.info("Saving best model...")
@@ -104,7 +105,9 @@ def training_loop(args):
   if args.test_best:
     logging.info("Testing best model...")
     trainer.test(pl_model_best)
-        
+  
+  return checkpoint.best_model_path
+ 
 def save_best_model(model_repo, pl_best_model):
     
     pl_best_model.model.save_pretrained("tb_logs/image-captioning/best_model", push_to_hub=True, repo_id=model_repo)

@@ -18,11 +18,11 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint
 
-def score_model(model_name, dataset_name):
+def score_model(model_name, dataset_name, metric):
     model = GitForCausalLM.from_pretrained(model_name)
     processor = GitProcessor.from_pretrained(model_name)
     pl_data_module = ImageCaptionDataModule(dataset_name, processor, batch_size=1, auth_token=os.getenv("HF_AUTH_TOKEN", None))    
-    pl_train_module = ImageCaptioningModule(processor, model, metric=args.metric)
+    pl_train_module = ImageCaptioningModule(processor, model, metric=metric)
     
     tester = pl.Trainer(accelerator="cuda", devices=1, num_sanity_val_steps=0)
     
@@ -31,4 +31,4 @@ def score_model(model_name, dataset_name):
 if __name__ == "__main__":
   args = parse_args()
 
-  score_model(args.model, args.dataset)
+  score_model(args.model, args.dataset, args.metric)
