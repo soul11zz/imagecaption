@@ -36,7 +36,7 @@ def training_loop(args):
   model = GitForCausalLM.from_pretrained(input_model_repo)
   callbacks = []
   
-  pl_train_module = ImageCaptioningModule(processor, model, learning_rate=1e-2)
+  pl_train_module = ImageCaptioningModule(processor, model, learning_rate=args.lr)
   
   ### Trainer
   logger = TensorBoardLogger("tb_logs", name="image-captioning")

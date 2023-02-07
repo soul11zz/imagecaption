@@ -47,9 +47,6 @@ class ImageCaptioningModule(pl.LightningModule):
                             )
 
       preds = self.processor.decode(pred_outputs[0], skip_special_tokens=True)
-      if len(preds) == 0:
-        logging.warning("Empty prediction")
-    
       loss = outputs.loss
       try:
         perplexity = torch.exp(loss)
