@@ -1,3 +1,4 @@
+from typing import List, Union
 import torch
 import pytorch_lightning as pl
 from metrics import ImageCaptionMetrics
@@ -48,14 +49,20 @@ class ImageCaptioningModule(pl.LightningModule):
 
       preds = self.processor.decode(pred_outputs[0], skip_special_tokens=True)
       loss = outputs.loss
-      try:
-        perplexity = torch.exp(loss)
-      except OverflowError:
-        perplexity = float("inf")
-        
-      self.log_dict({"val_loss": loss, "perplexity": perplexity}, sync_dist=True)
       return loss
 
+    def validation_epoch_end(self, outputs: Union[float, List[float]]) -> None:
+      avg_loss = sum(outputs) / len(outputs)
+      self.log_dict({"val_loss": avg_loss}, sync_dist=True)
+      
+      try:
+        perplexity = torch.exp(avg_loss)
+      except OverflowError:
+        perplexity = float("inf")
+      
+      self.log_dict({"val_loss": avg_loss, "perplexity": perplexity}, sync_dist=True)
+      return avg_loss
+     
     def test_step(self, batch, batch_idx):
       labels = self.processor.decode(batch["input_ids"][0], skip_special_tokens=True)
       pixel_values = batch["pixel_values"]
