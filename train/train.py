@@ -2,7 +2,7 @@ from datasets import load_dataset
 from dataset import ImageCaptioningDataset
 import logging
 logging.basicConfig(format='%(asctime)s  %(levelname)-10s %(message)s', datefmt="%Y-%m-%d-%H-%M-%S", level=logging.INFO)
-
+import os.path as osp
 from argparsing import parse_args
 from transformers import GitProcessor, GitForCausalLM
 
@@ -95,10 +95,13 @@ def training_loop(args):
   
   return checkpoint.best_model_path
  
-def save_best_model(model_repo, pl_best_model):
+def save_best_model(pl_best_model, model_repo, save_dir = "tb_logs/image-captioning/best_model"):
     
-    pl_best_model.model.save_pretrained("tb_logs/image-captioning/best_model", push_to_hub=True, repo_id=model_repo)
-    pl_best_model.processor.save_pretrained("tb_logs/image-captioning/best_model", push_to_hub=True, repo_id=model_repo)
+    if not osp.exist(save_dir):
+      os.makedirs(save_dir)
+      
+    pl_best_model.model.save_pretrained(save_dir, push_to_hub=True, repo_id=model_repo)
+    pl_best_model.processor.save_pretrained(save_dir, push_to_hub=True, repo_id=model_repo)
     return pl_best_model
 
     
