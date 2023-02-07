@@ -19,19 +19,6 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, Learning
 
 from pl_data import ImageCaptionDataModule
   
-def get_input_model_name(model_name_with_repo):
-  api = HfApi()
-  repo_name = model_name_with_repo
-  try:
-    api.create_repo(repo_name, private=True, exist_ok=False)
-    return "microsoft/git-base"
-  except:
-    try:
-      GitProcessor.from_pretrained(repo_name)
-      return model_name_with_repo
-    except:
-      return "microsoft/git-base"
-
 def crate_data_module(dataset_name, processor, batch_size, auth_token):
   
   return ImageCaptionDataModule(dataset_name, processor, batch_size=batch_size, auth_token=auth_token)
@@ -41,7 +28,7 @@ def training_loop(args):
   
   pl.seed_everything(42, workers=True)
   
-  input_model_repo = get_input_model_name(args.model)
+  input_model_repo = args.model
   processor = GitProcessor.from_pretrained(input_model_repo)
   
   data_module = crate_data_module(args.dataset, processor, args.batch_size, os.getenv("HF_AUTH_TOKEN", None))
