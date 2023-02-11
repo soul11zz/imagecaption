@@ -43,8 +43,8 @@ def training_loop(args):
       data_module.prepare_data()
       
     data_module.setup()
-    
-    torch.distributed.init_process_group(backend="nccl")
+    env = ddp.cluster_environment
+    torch.distributed.init_process_group(backend="nccl", rank=env.global_rank(), world_size=env.world_size())
     torch.distributed.barrier()
   
   model = GitForCausalLM.from_pretrained(input_model_repo, use_auth_token=hf_token)
