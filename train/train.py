@@ -1,5 +1,4 @@
-from datasets import load_dataset
-from dataset import ImageCaptioningDataset
+import sys
 import logging
 logging.basicConfig(format='%(asctime)s  %(levelname)-10s %(message)s', datefmt="%Y-%m-%d-%H-%M-%S", level=logging.INFO)
 import os.path as osp
@@ -18,6 +17,7 @@ from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 
 from pl_data import ImageCaptionDataModule
+import distributed as dist
   
 def crate_data_module(dataset_name, processor, batch_size, auth_token):
   
@@ -26,12 +26,26 @@ def crate_data_module(dataset_name, processor, batch_size, auth_token):
   
 def training_loop(args):
   
+  ddp, num_gpus, num_nodes = dist.get_initialization_info()
+  is_win = sys.platform.startswith("win")
+  
   pl.seed_everything(42, workers=True)
   
   input_model_repo = args.model
   processor = GitProcessor.from_pretrained(input_model_repo)
   
   data_module = crate_data_module(args.dataset, processor, args.batch_size, os.getenv("HF_AUTH_TOKEN", None))
+  
+  # We need to make sure that all the data is downloaded before we start training
+  # otherwise we may run into NCCL timeout issues during distributed training
+  if ddp:
+    if dist.local_rank() == 0:
+      data_module.prepare_data()
+      
+    data_module.setup()
+    
+    torch.distributed.init_process_group(backend="nccl")
+    torch.distributed.barrier()
   
   model = GitForCausalLM.from_pretrained(input_model_repo)
   callbacks = []
@@ -53,7 +67,9 @@ def training_loop(args):
   
   trainer = pl.Trainer( 
                         logger=logger, 
-                       devices=1,
+                       devices=num_gpus,
+                       num_nodes=num_nodes,
+                       strategy=ddp,
                        accelerator="cuda",
                        callbacks=callbacks,
                        max_epochs=args.epochs,
