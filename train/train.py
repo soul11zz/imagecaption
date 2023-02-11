@@ -29,16 +29,17 @@ def training_loop(args):
   ddp, num_gpus, num_nodes = dist.get_initialization_info()
   
   pl.seed_everything(42, workers=True)
+  hf_token = os.getenv("HF_AUTH_TOKEN", None)
   
   input_model_repo = args.model
-  processor = GitProcessor.from_pretrained(input_model_repo)
+  processor = GitProcessor.from_pretrained(input_model_repo, use_auth_token=hf_token)
   
-  data_module = crate_data_module(args.dataset, processor, args.batch_size, os.getenv("HF_AUTH_TOKEN", None))
+  data_module = crate_data_module(args.dataset, processor, args.batch_size, hf_token)
   
   # We need to make sure that all the data is downloaded before we start training
   # otherwise we may run into NCCL timeout issues during distributed training
-  if ddp:
-    if dist.local_rank() == 0:
+  if num_gpus > 1:
+    if dist.get_local_rank() == 0:
       data_module.prepare_data()
       
     data_module.setup()
@@ -46,7 +47,7 @@ def training_loop(args):
     torch.distributed.init_process_group(backend="nccl")
     torch.distributed.barrier()
   
-  model = GitForCausalLM.from_pretrained(input_model_repo)
+  model = GitForCausalLM.from_pretrained(input_model_repo, use_auth_token=hf_token)
   callbacks = []
   
   pl_train_module = ImageCaptioningModule(processor, model, learning_rate=args.lr)
