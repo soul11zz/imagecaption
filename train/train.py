@@ -27,7 +27,6 @@ def crate_data_module(dataset_name, processor, batch_size, auth_token):
 def training_loop(args):
   
   ddp, num_gpus, num_nodes = dist.get_initialization_info()
-  is_win = sys.platform.startswith("win")
   
   pl.seed_everything(42, workers=True)
   
