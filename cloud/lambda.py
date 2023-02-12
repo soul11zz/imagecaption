@@ -14,10 +14,10 @@ def prep_config(config_sh, ips):
   for i, line in enumerate(new_config):
     if "HEAD_IP" in line:
       [key, _] = line.split("=")
-      new_config[i] = f"{key}={ips[0]}"
+      new_config[i] = f"{key}={ips[0]}\n"
     elif "WORKER_IP" in line:
       [key, _] = line.split("=")
-      new_config[i] = f"{key}={' '.join(ips[1:])}"
+      new_config[i] = f"{key}={' '.join(ips[1:])}\n"
       
   return new_config
       
@@ -37,19 +37,19 @@ def modify_run_sh(run_sh, ip_list, gpu_list):
       
     if not master_set and "MASTER_HOST" in line:
       [key, _] = line.split("=")
-      new_run[i] = f"{key}={ip_list[0]}"
+      new_run[i] = f"{key}={ip_list[0]}\n"
       master_set = True
           
     elif not workers_set and "WORKERS" in line:
       [key, _] = line.split("=")
       
-      workers = ", ".join([f"{ip}:{gpu}" for ip, gpu in zip(ip_list, gpu_list)])
-      new_run[i] = f"{key}={workers}"
+      workers = ",".join([f"{ip}:{gpu}" for ip, gpu in zip(ip_list, gpu_list)])
+      new_run[i] = f"{key}={workers}\n"
       workers_set = True
             
     elif "HF_AUTH_TOKEN" in line:
       [key, _] = line.split("=")
-      new_run[i] = f"{key}={os.environ['HF_AUTH_TOKEN']}"
+      new_run[i] = f"{key}={os.environ['HF_AUTH_TOKEN']}\\\n"
       
   return new_run
       
@@ -68,7 +68,7 @@ def modify_setup(run_sh_path, config_sh_path, ip_list, gpu_list):
   with open(run_sh_path, "r") as f:
     run_sh = f.readlines()
   
-  config_lines = prep_config(config_sh)
+  config_lines = prep_config(config_sh, ips)
   run_lines = modify_run_sh(run_sh, ips, gpus)
 
   logging.info("New config file")
@@ -78,10 +78,10 @@ def modify_setup(run_sh_path, config_sh_path, ip_list, gpu_list):
   logging.info(run_lines)
   
   with open(config_sh_path, "w") as f:
-    f.writelines(list(map(lambda x: x + "\n", config_lines)))
+    f.writelines(config_lines)
 
   with open(run_sh_path, "w") as f:
-    f.writelines(list(map(lambda x: x + "\n", run_lines)))
+    f.writelines(run_lines)
   
 
 if __name__ == "__main__":
