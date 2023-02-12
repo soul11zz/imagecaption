@@ -3,10 +3,20 @@ import os.path as osp
 import re
 import copy
 
+from argparse import ArgumentParser
+
+def parse_args():
+  parser = ArgumentParser()
+
+  parser.add_argument("--run-sh-path", "-i", required=True, help="Path to run.sh")
+  parser.add_argument("--config-sh-path", "-c", required=True, help="Path to config.sh")
+  parser.add_argument("--ip-list",  required=True, help="List of IPs to use, comma separated (first in the list is the master)")
+  parser.add_argument("--gpu-list",  required=True, help="List of GPUs/IP to use, comma separated")
+  
+  return parser.parse_args()
+
 import logging
 logging.basicConfig(format='%(asctime)s  %(levelname)-10s %(message)s', datefmt="%Y-%m-%d-%H-%M-%S", level=logging.INFO)
-
-from argparsing import parse_args
 
 def prep_config(config_sh, ips):
   
@@ -71,12 +81,6 @@ def modify_setup(run_sh_path, config_sh_path, ip_list, gpu_list):
   config_lines = prep_config(config_sh, ips)
   run_lines = modify_run_sh(run_sh, ips, gpus)
 
-  logging.info("New config file")
-  logging.info(config_lines)
-  
-  logging.info("New run file")
-  logging.info(run_lines)
-  
   with open(config_sh_path, "w") as f:
     f.writelines(config_lines)
 
