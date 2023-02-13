@@ -47,6 +47,7 @@ def training_loop(args):
     torch.distributed.init_process_group(backend="nccl", rank=env.global_rank(), world_size=env.world_size())
     torch.distributed.barrier()
 
+  model = GitForCausalLM.from_pretrained(input_model_repo, use_auth_token=hf_token)
   pl_train_module = ImageCaptioningModule(processor, model, learning_rate=args.lr)
 
   # Tune learning rate only and quit
@@ -56,7 +57,6 @@ def training_loop(args):
     tuner.tune(pl_train_module, datamodule=data_module)
     return
   
-  model = GitForCausalLM.from_pretrained(input_model_repo, use_auth_token=hf_token)
   callbacks = []
   
   ### Trainer
