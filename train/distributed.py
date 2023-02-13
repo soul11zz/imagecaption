@@ -51,6 +51,10 @@ def get_initialization_info():
 
   if not is_win and ("LOCAL_RANK" in os.environ or "OMPI_COMM_WORLD_LOCAL_RANK" in os.environ):
     
+    # to avoid running out of file descriptors for dataloader workers
+    import torch.multiprocessing
+    torch.multiprocessing.set_sharing_strategy('file_system')
+    
     # For DDP with sagemaker
     env = get_trainer_env()
     

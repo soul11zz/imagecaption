@@ -15,9 +15,13 @@ class ImageCaptionDataModule(pl.LightningDataModule):
     
     self.save_hyperparameters(kwargs)
     self.batch_size = self.hparams.get("batch_size", 1)
+    
+    # pass that to fine-tune the number of workers
+    self.num_gpus = self.hparams.get("num_gpus", 1)
+    
     self.auth_token = auth_token
     self.train_loader = self.val_loader = self.test_loader = None
-    self.num_workers = os.cpu_count() if os.name != "nt" else 0
+    self.num_workers = os.cpu_count() // self.num_gpus if os.name != "nt" else 0
     
   def prepare_data(self):
     load_dataset(self.dataset_path, split="train", use_auth_token=self.auth_token)
