@@ -59,7 +59,7 @@ def modify_run_sh(run_sh, ip_list, gpu_list):
             
     elif "HF_AUTH_TOKEN" in line:
       [key, _] = line.split("=")
-      new_run[i] = f"{key}={os.environ['HF_AUTH_TOKEN']}\\\n"
+      new_run[i] = f"{key}={os.environ['HF_AUTH_TOKEN']} \\\n"
       
   return new_run
       
