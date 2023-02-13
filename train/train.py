@@ -46,6 +46,13 @@ def training_loop(args):
     env = ddp.cluster_environment
     torch.distributed.init_process_group(backend="nccl", rank=env.global_rank(), world_size=env.world_size())
     torch.distributed.barrier()
+
+  # Tune learning rate only and quit
+  if args.tune_lr:
+    logging.info("Tuning learning rate...")
+    tuner = pl.Trainer(auto_lr_find=True, devices=1, accelerator="cuda", num_sanity_val_steps=0)
+    tuner.tune(pl_train_module, datamodule=data_module)
+    return
   
   model = GitForCausalLM.from_pretrained(input_model_repo, use_auth_token=hf_token)
   callbacks = []
@@ -79,14 +86,6 @@ def training_loop(args):
                        num_sanity_val_steps=0,
                        )
 
-  # find our own learning rate
-  logging.info("Tuning learning rate...")
-  
-  if args.tune_lr:
-    logging.info("Tuning learning rate...")
-    tuner = pl.Trainer(auto_lr_find=True, devices=1, accelerator="cuda", num_sanity_val_steps=0)
-    tuner.tune(pl_train_module, datamodule=data_module)
-  
   # and fit
   logging.info("Training...")
   
