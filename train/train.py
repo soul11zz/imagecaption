@@ -29,7 +29,7 @@ def training_loop(args):
   ddp, num_gpus, num_nodes = dist.get_initialization_info()
   
   pl.seed_everything(42, workers=True)
-  hf_token = os.getenv("HF_AUTH_TOKEN", None)
+  hf_token = os.environ["HF_AUTH_TOKEN"]
   
   input_model_repo = args.model
   processor = GitProcessor.from_pretrained(input_model_repo, use_auth_token=hf_token)

@@ -20,7 +20,7 @@ class ImageCaptionDataModule(pl.LightningDataModule):
     self.num_workers = os.cpu_count() if os.name != "nt" else 0
     
   def prepare_data(self):
-    load_dataset(self.dataset_path, split="train")
+    load_dataset(self.dataset_path, split="train", use_auth_token=self.auth_token)
   
   def setup(self, stage=None):
 
