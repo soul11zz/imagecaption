@@ -49,7 +49,7 @@ def get_initialization_info():
   world_size = num_nodes = num_gpus = 1
   ddp = None
 
-  if not is_win:
+  if not is_win and ("LOCAL_RANK" in os.environ or "OMPI_COMM_WORLD_LOCAL_RANK" in os.environ):
     
     # For DDP with sagemaker
     env = get_trainer_env()
