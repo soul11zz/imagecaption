@@ -43,7 +43,7 @@ class ImageCaptionDataModule(pl.LightningDataModule):
       
       # Distributed sampling
       if self.num_gpus > 0:
-        train_sampler = DistributedSampler(self.train_dataset, num_replicas=get_world_size(), rank=get_global_rank(), shuffle=True)
+        train_sampler = DistributedSampler(self.train_dataset, num_replicas=get_world_size(), rank=get_global_rank(), shuffle=False)
         val_sampler = DistributedSampler(self.val_dataset, num_replicas=get_world_size(), rank=get_global_rank(), shuffle=False)
         
       self.tran_loader =  DataLoader(self.train_dataset, batch_size=self.batch_size, sampler=train_sampler, shuffle=False, num_workers=self.num_workers)
