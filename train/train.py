@@ -19,9 +19,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, Learning
 from pl_data import ImageCaptionDataModule
 import distributed as dist
   
-def crate_data_module(dataset_name, processor, batch_size, auth_token):
+def crate_data_module(dataset_name, processor, num_gpus, batch_size, auth_token):
   
-  return ImageCaptionDataModule(dataset_name, processor, batch_size=batch_size, auth_token=auth_token)
+  return ImageCaptionDataModule(dataset_name, processor, num_gpus = num_gpus, batch_size=batch_size, auth_token=auth_token)
   
   
 def training_loop(args):
@@ -34,7 +34,7 @@ def training_loop(args):
   input_model_repo = args.model
   processor = GitProcessor.from_pretrained(input_model_repo, use_auth_token=hf_token)
   
-  data_module = crate_data_module(args.dataset, processor, args.batch_size, hf_token)
+  data_module = crate_data_module(args.dataset, processor, num_gpus, args.batch_size, hf_token)
   
   # We need to make sure that all the data is downloaded before we start training
   # otherwise we may run into NCCL timeout issues during distributed training
