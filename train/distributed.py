@@ -78,3 +78,7 @@ def get_global_rank():
 def get_local_rank():
   env = get_trainer_env()
   return env.local_rank()
+
+def get_world_size():
+  env = get_trainer_env()
+  return env.world_size()
