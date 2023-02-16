@@ -4,6 +4,11 @@ import os
 from torch.utils.data import DataLoader, DistributedSampler
 from datasets import load_dataset
 from distributed import get_global_rank, get_world_size
+
+# to avoid running out of file descriptors for dataloader workers
+import torch.multiprocessing
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 class ImageCaptionDataModule(pl.LightningDataModule):
   
   def __init__(self, dataset_path, processor, auth_token=None, **kwargs):
