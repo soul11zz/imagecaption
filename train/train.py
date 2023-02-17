@@ -92,17 +92,13 @@ def training_loop(args):
   trainer.fit(pl_train_module, datamodule=data_module)
   
   pl_model_best = None
-  if args.save_best or args.test_best:
+  if args.best_model or args.test_best:
     pl_model_best = ImageCaptioningModule.load_from_checkpoint(checkpoint.best_model_path, processor=processor, model=model,)
   
   # save best model
-  if args.save_best:
-    logging.info("Saving best model...")
-    if not args.best_model:
-      logging.warning("No best model name provided, skipping upload of the best model to HuggingFace Hub.")
-    else:
-      logging.info(f"Uploading best model to HuggingFace Hub as {args.best_model}")
-      save_best_model(pl_model_best, args.best_model)
+  if args.best_model:
+    logging.info(f"Uploading best model to HuggingFace Hub as {args.best_model}")
+    save_best_model(pl_model_best, args.best_model)
 
   if args.test_best:
     logging.info("Testing best model...")
