@@ -106,7 +106,7 @@ def training_loop(args):
 
   if args.test_best:
     logging.info("Testing best model...")
-    trainer.test(pl_model_best)
+    trainer.test(pl_model_best, datamodule=data_module)
   
   return checkpoint.best_model_path
  
