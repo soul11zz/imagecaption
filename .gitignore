@@ -137,3 +137,4 @@ tb_logs/
 lightning_logs/
 .lr_find_*
 run.sh
+*.code-workspace

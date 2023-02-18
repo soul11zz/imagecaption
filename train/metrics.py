@@ -8,7 +8,7 @@ class ImageCaptionMetrics:
   bleu = None
   
   @classmethod
-  def bleu_score(cls, preds : str, targets : List[str], n_gram=2):
+  def bleu_score(cls, preds : str, targets : List[str], n_gram=4):
     if cls.bleu is None:
       cls.bleu = BLEUScore(n_gram=n_gram)
     return cls.bleu([preds], [targets]).item()

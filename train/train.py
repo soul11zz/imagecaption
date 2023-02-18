@@ -98,7 +98,7 @@ def training_loop(args):
   # save best model
   if args.best_model:
     logging.info(f"Uploading best model to HuggingFace Hub as {args.best_model}")
-    save_best_model(pl_model_best, args.best_model)
+    save_best_model(pl_model_best, args.best_model, auth_token=hf_token)
 
   if args.test_best:
     logging.info("Testing best model...")
@@ -106,13 +106,15 @@ def training_loop(args):
   
   return checkpoint.best_model_path
  
-def save_best_model(pl_best_model, model_repo, save_dir = "tb_logs/image-captioning/best_model"):
+def save_best_model(pl_best_model, model_repo, save_dir = "tb_logs/image-captioning/best_model", auth_token=None):
     
-    if not osp.exist(save_dir):
+    if not osp.exists(save_dir):
       os.makedirs(save_dir)
-      
-    pl_best_model.model.save_pretrained(save_dir, push_to_hub=True, repo_id=model_repo)
-    pl_best_model.processor.save_pretrained(save_dir, push_to_hub=True, repo_id=model_repo)
+    
+    api = HfApi()
+    api.create_repo(token=auth_token, name=model_repo, private = True, exist_ok=True)
+    pl_best_model.model.save_pretrained(save_dir, push_to_hub=True, repo_id=model_repo, use_auth_token=auth_token)
+    pl_best_model.processor.save_pretrained(save_dir, push_to_hub=True, repo_id=model_repo, use_auth_token=auth_token)
     return pl_best_model
 
     
