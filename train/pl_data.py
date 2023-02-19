@@ -29,7 +29,7 @@ class ImageCaptionDataModule(pl.LightningDataModule):
     self.num_workers = min(12, os.cpu_count() // self.num_gpus) if os.name != "nt" else 0
     
   def prepare_data(self):
-    load_dataset(self.dataset_path, split="train", use_auth_token=self.auth_token)
+    load_dataset(self.dataset_path, split="train", use_auth_token=self.auth_token, num_proc=self.num_workers)
   
   def setup(self, stage=None):
 
