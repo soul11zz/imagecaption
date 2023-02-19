@@ -8,3 +8,4 @@ lightning-bolts
 tensorboard
 tensorboardX
 evaluate
+sentence-transformers
