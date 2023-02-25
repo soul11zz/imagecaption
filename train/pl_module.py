@@ -65,8 +65,6 @@ class ImageCaptioningModule(pl.LightningModule):
             
         avg_loss = sum(out_loss) / len(out_loss)
         
-        self.log_dict({"val_loss": avg_loss}, sync_dist=True)
-        
         try:
             perplexity = torch.exp(avg_loss)
         except OverflowError:

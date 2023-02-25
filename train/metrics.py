@@ -35,6 +35,6 @@ class ImageCaptionMetrics:
     if len(preds) == 0:
         return 0
     
-    encodings_preds = cls.semantic_model.encode([preds], convert_to_tensor=True)
-    encodings_expected = cls.semantic_model.encode(targets, convert_to_tensor=True)
+    encodings_preds = cls.semantic_model.encode([preds], convert_to_tensor=True, show_progress_bar=False)
+    encodings_expected = cls.semantic_model.encode(targets, convert_to_tensor=True, show_progress_bar=False)
     return cos_sim(encodings_preds, encodings_expected).item()
