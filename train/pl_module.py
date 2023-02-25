@@ -49,8 +49,8 @@ class ImageCaptioningModule(pl.LightningModule):
             semanic_sim = 0
             for b, p in zip(input_ids, pixel_values):
                 test_batch = {"input_ids": b.unsqueeze(0), "pixel_values": p.unsqueeze(0)}
-                semanic_sim +=self.test_step(test_batch, None)
-            semanic_sim /= batch.shape[0]
+                semanic_sim += self.compute_metric(test_batch, None)
+            semanic_sim /= input_ids.shape[0]
             
             loss = (outputs.loss, semanic_sim,)    
         return loss
@@ -74,8 +74,8 @@ class ImageCaptioningModule(pl.LightningModule):
         
         self.log_dict({"val_loss": avg_loss, "perplexity": perplexity}, sync_dist=True)
         return avg_loss
-     
-    def test_step(self, batch, batch_idx):
+
+    def compute_metric(self, batch, batch_idx):
         labels = self.processor.decode(batch["input_ids"][0], skip_special_tokens=True)
         pixel_values = batch["pixel_values"]
         
@@ -86,6 +86,9 @@ class ImageCaptioningModule(pl.LightningModule):
 
         preds = self.processor.decode(outputs[0], skip_special_tokens=True)
         return self.metric(preds, [labels])
+    
+    def test_step(self, batch, batch_idx):
+        return self.compute_metric(batch, batch_idx)
     
     def test_epoch_end(self, test_scores):
         score = sum(test_scores) / len(test_scores)
