@@ -29,7 +29,7 @@ class ImageCaptionDataModule(pl.LightningDataModule):
     self.num_workers = min(12, os.cpu_count() // self.num_gpus) if os.name != "nt" else 0
     
   def prepare_data(self):
-    load_dataset(self.dataset_path, split="train", use_auth_token=self.auth_token, num_proc=self.num_workers)
+    load_dataset(self.dataset_path, split="train", use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
   
   def setup(self, stage=None):
 
@@ -40,17 +40,17 @@ class ImageCaptionDataModule(pl.LightningDataModule):
       if self.train_loader:
         return
       
-      dt_train = load_dataset(self.dataset_path, split="train", use_auth_token=self.auth_token)
+      dt_train = load_dataset(self.dataset_path, split="train", use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
       self.train_dataset = ImageCaptioningDataset(dt_train, processor)
       
-      dt_val = load_dataset(self.dataset_path, split="validation", use_auth_token=self.auth_token)
+      dt_val = load_dataset(self.dataset_path, split="validation", use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
       self.val_dataset = ImageCaptioningDataset(dt_val, processor)
       
       self.tran_loader =  DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
       self.val_loader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
         
     else:
-      dt_test = load_dataset(self.dataset_path, split="test", use_auth_token=self.auth_token)
+      dt_test = load_dataset(self.dataset_path, split="test", use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
       self.test_dataset = ImageCaptioningDataset(dt_test, processor)
       self.test_loader = DataLoader(self.test_dataset, batch_size=1, shuffle=False, num_workers=self.num_workers)
       
