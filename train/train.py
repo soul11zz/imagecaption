@@ -82,7 +82,7 @@ def training_loop(args):
         callbacks=callbacks,
         max_epochs=args.epochs,
         check_val_every_n_epoch=1,
-        val_check_interval=10,
+#        val_check_interval=10,
         precision=16,
         num_sanity_val_steps=0,
     )
