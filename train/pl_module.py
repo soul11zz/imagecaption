@@ -49,7 +49,7 @@ class ImageCaptioningModule(pl.LightningModule):
             semanic_sim = 0
             for b, p in zip(input_ids, pixel_values):
                 test_batch = {"input_ids": b.unsqueeze(0), "pixel_values": p.unsqueeze(0)}
-                semanic_sim += self.compute_metric(test_batch, None)
+                semanic_sim += (1 - self.compute_metric(test_batch, None))
             semanic_sim /= input_ids.shape[0]
             
             loss = (outputs.loss, semanic_sim,)    
@@ -61,7 +61,7 @@ class ImageCaptioningModule(pl.LightningModule):
         if self.is_semantic_validation:
             out_loss, out_sem = zip(*outputs)
             avg_sem = sum(out_sem) / len(out_sem)
-            self.log_dict({"semantic_similarity": avg_sem}, sync_dist=True)
+            self.log_dict({"semantic_distance": avg_sem}, sync_dist=True)
             
         avg_loss = sum(out_loss) / len(out_loss)
         
@@ -96,8 +96,10 @@ class ImageCaptioningModule(pl.LightningModule):
     def configure_optimizers(self):
         # TODO add scheduler
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=2)
-        scheduler = {"scheduler": lr_scheduler, "monitor": "val_loss"}
-    
-        return [optimizer], scheduler
+        monitor_loss = "val_loss" if not self.is_semantic_validation else "semantic_distance"
+        
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.99, patience=2, min_lr=1e-6)
+        scheduler = {"scheduler": lr_scheduler, "monitor": monitor_loss, "interval": "epoch"}
+        
+        return [optimizer], [scheduler]
       

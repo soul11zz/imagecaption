@@ -64,13 +64,13 @@ def training_loop(args):
     logger = TensorBoardLogger("tb_logs", name="image-captioning")
 
     checkpoint = ModelCheckpoint(dirpath=args.model_dir,
-                                 save_top_k=2, monitor="semantic_similarity",
+                                 save_top_k=2, monitor="semantic_distance",
                                  mode="max",
                                  filename="imcap-{epoch:02d}-{semantic_sim:.2f}")
 
-    early_stopping = EarlyStopping(monitor="semantic_similarity", patience=3, mode="max")
+    early_stopping = EarlyStopping(monitor="semantic_distance", patience=3, mode="min")
 
-    lr_monitor = LearningRateMonitor(logging_interval="step")
+    lr_monitor = LearningRateMonitor()
     callbacks += [checkpoint, early_stopping, lr_monitor]
 
     trainer = pl.Trainer(
