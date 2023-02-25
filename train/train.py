@@ -66,7 +66,7 @@ def training_loop(args):
     checkpoint = ModelCheckpoint(dirpath=args.model_dir,
                                  save_top_k=2, monitor="semantic_distance",
                                  mode="max",
-                                 filename="imcap-{epoch:02d}-{semantic_sim:.2f}")
+                                 filename="imcap-{epoch:02d}-{semantic_distance:.2f}")
 
     early_stopping = EarlyStopping(monitor="semantic_distance", patience=3, mode="min")
 
@@ -116,8 +116,7 @@ def save_best_model(pl_best_model, model_repo, save_dir="tb_logs/image-captionin
         os.makedirs(save_dir)
 
     api = HfApi()
-    api.create_repo(token=auth_token, name=model_repo,
-                    private=True, exist_ok=True)
+    api.create_repo(model_repo, token=auth_token, private=True, exist_ok=True)
     pl_best_model.model.save_pretrained(save_dir, push_to_hub=True, repo_id=model_repo, use_auth_token=auth_token)
     pl_best_model.processor.save_pretrained(save_dir, push_to_hub=True, repo_id=model_repo, use_auth_token=auth_token)
     return pl_best_model
