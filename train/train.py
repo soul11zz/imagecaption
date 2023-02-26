@@ -19,7 +19,8 @@ logging.basicConfig(format='%(asctime)s  %(levelname)-10s %(message)s',
 
 def crate_data_module(dataset_name, processor, num_gpus, batch_size, auth_token):
 
-    return ImageCaptionDataModule(dataset_name, processor, num_gpus=num_gpus, batch_size=batch_size, auth_token=auth_token)
+    dataset_names = dataset_name.split(",")
+    return ImageCaptionDataModule(dataset_names, processor, num_gpus=num_gpus, batch_size=batch_size, auth_token=auth_token)
 
 
 def training_loop(args):
@@ -43,8 +44,7 @@ def training_loop(args):
 
         data_module.setup()
         env = ddp.cluster_environment
-        torch.distributed.init_process_group(
-            backend="nccl", rank=env.global_rank(), world_size=env.world_size())
+        torch.distributed.init_process_group(backend="nccl", rank=env.global_rank(), world_size=env.world_size())
         torch.distributed.barrier()
 
     model = GitForCausalLM.from_pretrained(input_model_repo, use_auth_token=hf_token)
