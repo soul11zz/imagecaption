@@ -38,8 +38,7 @@ class ImageCaptionDataModule(pl.LightningDataModule):
         if self.train_loader is not None:
             return
         for dataset_path in self.dataset_path:
-            load_dataset(dataset_path, split="train",
-                         use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
+            load_dataset(dataset_path, split="train", use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
 
     def load_datasets(self, split):
         dataset_list = []
