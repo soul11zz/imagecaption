@@ -12,9 +12,10 @@ import os
 import pytorch_lightning as pl
 
 def score_model(model_name, dataset_name, metric):
-    model = GitForCausalLM.from_pretrained(model_name)
-    processor = GitProcessor.from_pretrained(model_name)
-    pl_data_module = ImageCaptionDataModule(dataset_name, processor, batch_size=1, auth_token=os.getenv("HF_AUTH_TOKEN", None))    
+    hf_token = os.environ["HF_AUTH_TOKEN"]
+    model = GitForCausalLM.from_pretrained(model_name, use_auth_token=hf_token)
+    processor = GitProcessor.from_pretrained(model_name, use_auth_token=hf_token)
+    pl_data_module = ImageCaptionDataModule(dataset_name, processor, batch_size=1, auth_token=hf_token)    
     pl_train_module = ImageCaptioningModule(processor, model, metric=metric)
     
     tester = pl.Trainer(accelerator="cuda", devices=1, num_sanity_val_steps=0)

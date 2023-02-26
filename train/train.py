@@ -93,6 +93,7 @@ def training_loop(args):
     trainer.fit(pl_train_module, datamodule=data_module)
 
     pl_model_best = None
+    
     if args.best_model or args.test_best:
         pl_model_best = ImageCaptioningModule.load_from_checkpoint(
             checkpoint.best_model_path, processor=processor, model=model,)
