@@ -41,39 +41,29 @@ class ImageCaptionDataModule(pl.LightningDataModule):
             load_dataset(dataset_path, split="train",
                          use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
 
+    def load_datasets(self, split):
+        dataset_list = []
+        for dataset_path in self.dataset_path:
+            dt = load_dataset(dataset_path, split=split, use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
+            dataset_list.append(ImageCaptioningDataset(dt, self.processor))
+        return ConcatDataset(dataset_list)
+    
     def setup(self, stage=None):
-
-        processor = self.processor
 
         if stage != "test":
             # we have already downloaded the train dataloader
             if self.train_loader:
                 return
 
-            train_datasets = []
-            val_datasets = []
-            for dataset_path in self.dataset_path:
-                dt_train = load_dataset(self.dataset_path, split="train",
-                                        use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
-                train_datasets.append(
-                    ImageCaptioningDataset(dt_train, processor))
+            self.train_dataset = self.load_datasets("train")
+            self.val_dataset = self.load_datasets("validation")
 
-                dt_val = load_dataset(dataset_path, split="validation",
-                                      use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
-                val_datasets.append(ImageCaptioningDataset(dt_val, processor))
-
-            self.train_dataset = ConcatDataset(train_datasets)
-            self.val_dataset = ConcatDataset(val_datasets)
-            
             self.tran_loader = DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
             self.val_loader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
         else:
-            dt_test = load_dataset(self.dataset_path, split="test",
-                                   use_auth_token=self.auth_token, num_proc=self.num_workers + 1)
-            self.test_dataset = ImageCaptioningDataset(dt_test, processor)
-            self.test_loader = DataLoader(
-                self.test_dataset, batch_size=1, shuffle=False, num_workers=self.num_workers)
+            self.test_dataset = self.load_datasets("test")
+            self.test_loader = DataLoader(self.test_dataset, batch_size=1, shuffle=False, num_workers=self.num_workers)
 
     def train_dataloader(self):
         return self.tran_loader
