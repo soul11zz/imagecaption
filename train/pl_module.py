@@ -98,7 +98,7 @@ class ImageCaptioningModule(pl.LightningModule):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         monitor_loss = "val_loss" if not self.is_semantic_validation else "semantic_distance"
         
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.99, patience=2, min_lr=1e-6)
+        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.995)
         scheduler = {"scheduler": lr_scheduler, "monitor": monitor_loss, "interval": "epoch"}
         
         return [optimizer], [scheduler]
