@@ -65,10 +65,10 @@ def training_loop(args):
 
     checkpoint = ModelCheckpoint(dirpath=args.model_dir,
                                  save_top_k=2, monitor="semantic_distance",
-                                 mode="max",
+                                 mode="min",
                                  filename="imcap-{epoch:02d}-{semantic_distance:.2f}")
 
-    early_stopping = EarlyStopping(monitor="semantic_distance", patience=3, mode="min")
+    early_stopping = EarlyStopping(monitor="semantic_distance", patience=5, mode="min")
 
     lr_monitor = LearningRateMonitor()
     callbacks += [checkpoint, early_stopping, lr_monitor]
