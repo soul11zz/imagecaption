@@ -1,0 +1,18 @@
+git+https://github.com/huggingface/transformers.git
+pytorch-lightning==1.7.7
+datasets
+sentencepiece>=0.1.97
+nltk==3.7
+orjson>=3.6.8
+lightning-bolts
+tensorboard
+tensorboardX
+evaluate
+sentence-transformers
+jupyterlab
+ipywidgets
+torch --extra-index-url https://download.pytorch.org/whl/cu117
+torchvision --extra-index-url https://download.pytorch.org/whl/cu117
+torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
+streamlit
+gradio
